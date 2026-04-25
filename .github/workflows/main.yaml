@@ -1,0 +1,26 @@
+name: reservation-form
+on: workflow_dispatch
+jobs:
+    docker-buld:
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout_code
+              uses: actions/checkout@v6
+            - name: configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v3
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: us-east-1
+            - name: aws_ecr_login
+              uses: aws-actions/amazon-ecr-login@v1
+            - name: Build image
+              env:
+                ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+                ECR_REPOSITORY: registrationform
+                IMAGE_TAG: ${{ github.run_number }}
+              run: |
+                REPO_NAME=$(echo ${{ github.repository }} | awk -F'/' '{print $2}')
+                docker build -t $REPO_NAME:$IMAGE_TAG .
+                docker tag  $REPO_NAME:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
